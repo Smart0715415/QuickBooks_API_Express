@@ -21,7 +21,7 @@
     </h1>
     <hr>
     <div class="well text-center">
-        <h1>intuit-nodejsclient sample application</h1>
+        <h1>This is a sample application of express to QB</h1>
         <br>
     </div>
     <h2>OAuth2.0</h2><h4>( Please enter the client credentials below )</h4><br>
@@ -51,6 +51,7 @@
     <a class="imgLink" href="#" id="authorizeUri" ><img src="./images/C2QB_green_btn_lg_default.png" width="178" /></a>
     <button  type="button" id="retrieveToken" class="btn btn-success">Display Access Token</button>
     <button  type="button" id="refreshToken" class="btn btn-success">Refresh Token</button>
+    <button  type="button" id="connectMysql" class = "btn-success">Connect Mysql</button>
     <hr />
 
     <h2>Make an API call</h2><h4>( Please refer to our <a target="_balnk" href="https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Account">API Explorer</a> )</h4>
@@ -141,6 +142,11 @@
         document.getElementById('retrieveToken').addEventListener('click', function response(e) {
             e.preventDefault();
             retrieveToken();
+        });
+
+        document.getElementById('connectMysql').addEventListener('click', function response(e) {
+            e.preventDefault();
+            //retrieveToken();
         });
 
         document.getElementById('refreshToken').addEventListener('click', function response(e) {

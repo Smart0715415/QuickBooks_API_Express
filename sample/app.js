@@ -7,12 +7,14 @@ require('dotenv').config();
  * @type {*|createApplication}
  */
 const express = require('express');
-
+//const session = require('express-session');
 const app = express();
 const path = require('path');
 const OAuthClient = require('intuit-oauth');
 const bodyParser = require('body-parser');
 const ngrok = process.env.NGROK_ENABLED === 'true' ? require('ngrok') : null;
+const qboModel = require('./mysql_connection/qbo_models.js');
+const pool=require("./mysql_connection/connection.js");
 
 /**
  * Configure View and Handlebars
@@ -138,6 +140,120 @@ app.get('/disconnect', function (req, res) {
   res.redirect(authUri);
 });
 
+
+function get_accounts(req, res, AccountId){
+  qboModel.get_qb_login_details(AccountId,function(results){
+   results = JSON.parse(JSON.stringify(results));//deep copy
+  if(results.length>0){
+      var qbo = new QuickBooks(config.clientId,
+          config.clientSecret,
+          results[0].AccessToken, /* oAuth access token */
+          false, /* no token secret for oAuth 2.0 */
+          results[0].RealmID,
+          config.useSandbox, /* use a sandbox account */
+          true, /* turn debugging on */
+          34, /* minor version */
+          '2.0', /* oauth version */
+          results[0].RefreshToken /* refresh token */);
+      qbo.findAccounts({
+          fetchAll: true
+        }, function(err, accounts) {
+          if (err) {
+              console.log(err);
+              var error_detail = err.fault.error[0].detail;
+              var check_token_exp = 'Token expired';
+              if(error_detail.indexOf(check_token_exp) !== -1){
+                  refresh_token(req, res,AccountId,results[0].RefreshToken,'get_accounts');
+              }else{
+                  res.send(err.fault.error[0].detail);
+              }
+              
+          }
+          else {
+              res.send(accounts.QueryResponse);
+          }
+      });
+  }else{
+      res.send('User not connected')
+  }
+    });
+}
+function get_payment_method(req, res, AccountId){
+  qboModel.get_qb_login_details(AccountId,function(results){
+  results = JSON.parse(JSON.stringify(results));
+  console.log(results);
+  if(results.length>0){
+      var qbo = new QuickBooks(config.clientId,
+          config.clientSecret,
+          results[0].AccessToken, /* oAuth access token */
+          false, /* no token secret for oAuth 2.0 */
+          results[0].RealmID,
+          config.useSandbox, /* use a sandbox account */
+          true, /* turn debugging on */
+          34, /* minor version */
+          '2.0', /* oauth version */
+          results[0].RefreshToken /* refresh token */);
+      qbo.findPaymentMethods({
+          fetchAll: true
+        }, function(err, accounts) {
+          if (err) {
+              if(err.fault.error[0].detail){
+                  var error_detail = err.fault.error[0].detail;
+                  var check_token_exp = 'Token expired';
+                  console.log(error_detail.indexOf(check_token_exp) !== -1);
+                  if(error_detail.indexOf(check_token_exp) !== -1 || err.fault.error[0].detail==='Token revoked'){
+                      refresh_token(req, res,AccountId,results[0].RefreshToken,'get_payment_method');
+                  }else{
+                      res.send(err.fault.error[0].detail);
+                  }
+              }
+              
+              
+          }
+          else {
+              res.send(accounts.QueryResponse);
+              
+          }
+      });
+  }else{
+          res.render('qb_connect',{
+              redirect_uri: config.redirectUri,
+              token_json: token_json
+          });
+      }
+  });
+}
+
+
+function refresh_token(req, res,AccountId,oldrefresh_token,callback_function){
+  var auth = (new Buffer(config.clientId + ':' + config.clientSecret).toString('base64'));
+  var postBody = {
+      url: config.token_endpoint,
+      headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ' + auth,
+      },
+      form: {
+          grant_type: 'refresh_token',
+          refresh_token: oldrefresh_token
+      }
+  };
+
+  request.post(postBody, function (err, res, data) {
+      var accessToken = JSON.parse(res.body);
+      if(accessToken.access_token){
+          pool.query('UPDATE account_quickbooks_keys SET   AccessToken = ?, RefreshToken = ?, Expires = ? WHERE Account = ?', [accessToken.access_token,accessToken.refresh_token,accessToken.expires_in,AccountId], function (error, results, fields) {
+              if (error) throw error;
+              // ...
+            });
+      }
+      
+  });
+
+  eval(callback_function+"(req, res,AccountId)");
+}
+
 /**
  * Start server on HTTP (will use ngrok for HTTPS forwarding)
  */
@@ -145,23 +261,24 @@ const server = app.listen(process.env.PORT || 8000, () => {
   console.log(`💻 Server listening on port ${server.address().port}`);
   if (!ngrok) {
     redirectUri = `${server.address().port}` + '/callback';
-    console.log(
-      `💳  Step 1 : Paste this URL in your browser : ` +
-        'http://localhost:' +
-        `${server.address().port}`,
-    );
-    console.log(
-      '💳  Step 2 : Copy and Paste the clientId and clientSecret from : https://developer.intuit.com',
-    );
-    console.log(
-      `💳  Step 3 : Copy Paste this callback URL into redirectURI :` +
-        'http://localhost:' +
-        `${server.address().port}` +
-        '/callback',
-    );
-    console.log(
-      `💻  Step 4 : Make Sure this redirect URI is also listed under the Redirect URIs on your app in : https://developer.intuit.com`,
-    );
+    console.log("success!");
+    // console.log(
+    //   `💳  Step 1 : Paste this URL in your browser : ` +
+    //     'http://localhost:' +
+    //     `${server.address().port}`,
+    // );
+    // console.log(
+    //   '💳  Step 2 : Copy and Paste the clientId and clientSecret from : https://developer.intuit.com',
+    // );
+    // console.log(
+    //   `💳  Step 3 : Copy Paste this callback URL into redirectURI :` +
+    //     'http://localhost:' +
+    //     `${server.address().port}` +
+    //     '/callback',
+    // );
+    // console.log(
+    //   `💻  Step 4 : Make Sure this redirect URI is also listed under the Redirect URIs on your app in : https://developer.intuit.com`,
+    // );
   }
 });
 
@@ -174,14 +291,15 @@ if (ngrok) {
     .connect({ addr: process.env.PORT || 8000 })
     .then((url) => {
       redirectUri = `${url}/callback`;
-      console.log(`💳 Step 1 : Paste this URL in your browser :  ${url}`);
-      console.log(
-        '💳 Step 2 : Copy and Paste the clientId and clientSecret from : https://developer.intuit.com',
-      );
-      console.log(`💳 Step 3 : Copy Paste this callback URL into redirectURI :  ${redirectUri}`);
-      console.log(
-        `💻 Step 4 : Make Sure this redirect URI is also listed under the Redirect URIs on your app in : https://developer.intuit.com`,
-      );
+      console.log("success!");
+      // console.log(`💳 Step 1 : Paste this URL in your browser :  ${url}`);
+      // console.log(
+      //   '💳 Step 2 : Copy and Paste the clientId and clientSecret from : https://developer.intuit.com',
+      // );
+      // console.log(`💳 Step 3 : Copy Paste this callback URL into redirectURI :  ${redirectUri}`);
+      // console.log(
+      //   `💻 Step 4 : Make Sure this redirect URI is also listed under the Redirect URIs on your app in : https://developer.intuit.com`,
+      // );
     })
     .catch(() => {
       process.exit(1);
