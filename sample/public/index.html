@@ -51,7 +51,7 @@
     <a class="imgLink" href="#" id="authorizeUri" ><img src="./images/C2QB_green_btn_lg_default.png" width="178" /></a>
     <button  type="button" id="retrieveToken" class="btn btn-success">Display Access Token</button>
     <button  type="button" id="refreshToken" class="btn btn-success">Refresh Token</button>
-    <button  type="button" id="connectMysql" class = "btn-success">Connect Mysql</button>
+    <button  type="button" id="connectMysql" class ="btn btn-success">Connect Mysql</button>
     <hr />
 
     <h2>Make an API call</h2><h4>( Please refer to our <a target="_balnk" href="https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Account">API Explorer</a> )</h4>
@@ -126,6 +126,16 @@
             });
         }
 
+        function connnectMysql(){
+            //get connection with mysql
+            window.location.href="http://localhost:8000/connectMysql";
+
+            // $.get("/connnectMysql",function(response) {
+            //     this.msg = response.data.list;
+            //     console.log(this.msg);
+            // });
+        }
+
         function makeAPICall() {
 
             // Generate the authUri
@@ -146,7 +156,7 @@
 
         document.getElementById('connectMysql').addEventListener('click', function response(e) {
             e.preventDefault();
-            //retrieveToken();
+            connnectMysql();
         });
 
         document.getElementById('refreshToken').addEventListener('click', function response(e) {

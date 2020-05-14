@@ -14,7 +14,8 @@ const OAuthClient = require('intuit-oauth');
 const bodyParser = require('body-parser');
 const ngrok = process.env.NGROK_ENABLED === 'true' ? require('ngrok') : null;
 const qboModel = require('./mysql_connection/qbo_models.js');
-const pool=require("./mysql_connection/connection.js");
+//const db=require("./mysql_connection/connection.js");
+const db=require("./mysql_connection/connection.js");
 
 /**
  * Configure View and Handlebars
@@ -127,6 +128,34 @@ app.get('/getCompanyInfo', function (req, res) {
       console.error(e);
     });
 });
+
+app.get('/connectMysql',function(req,res,next){
+  //get_accounts(req, res, req.body.AccountId);
+  var sql="select * from test";
+  db.querySQL(sql,(err,rows)=>{
+    if(err){
+      res.json({err:"unable to connect with mysql"})
+    }
+    else{
+      res.json({list:rows})
+    }
+  })
+    //res.render('index', { title: 'Express' });
+});
+   
+// app.get('/first',(req,res,next)=>{
+//     let sql="select * from test"
+//     db.query(sql,(err,rows)=>{
+//       if(err){
+//         res.json({err:"unable to connect with mysql"})
+//       }
+//       else{
+//         res.json({list:rows})
+//       }
+//     })
+// });
+ 
+
 
 /**
  * disconnect ()
