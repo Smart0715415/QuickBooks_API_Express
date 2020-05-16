@@ -17,6 +17,10 @@ const qboModel = require('./mysql_connection/qbo_models.js');
 //const db=require("./mysql_connection/connection.js");
 const db=require("./mysql_connection/connection.js");
 
+//these two pachage is for scrapy data from account
+const cheerio = require('cheerio');
+const superagent = require('superagent');
+
 /**
  * Configure View and Handlebars
  */
@@ -128,7 +132,30 @@ app.get('/getCompanyInfo', function (req, res) {
       console.error(e);
     });
 });
+app.get('/accessCompanyDB',function(req,res){
 
+  superagent.get('https://c73.qbo.intuit.com/app/chartofaccounts')
+    .end(function (err, sres) {
+      if (err) {
+        return next(err);
+      }
+      
+      var $ = cheerio.load('div data-automation-id="chart-of-accounts-grid" data-dojo-attach-point="grid" class="dgrid dgrid-grid ui-widget dgrid-03 universal-grid" data-dojo-bind="visible:showSpinner" id="dgrid_3" role="grid"><div class="dgrid-hider-menu" role="dialog" aria-label="Show or hide columns" id="dgrid_3-hider-menu" style="display: none;">...</div>');
+      var items = [];
+      $('#dgrid dgrid-grid ui-widget dgrid-03 universal-grid').each(function (idx, element) {
+        //var $element = $(chart-of-accounts-grid);
+        items.push({
+          NAME:$('#dgrid-cell dgrid-cell-padding dgrid-column-0 field-name dgrid-sortable sorted_div dgrid-focus'),
+          TYPE: $element.attr('#dgrid-cell dgrid-cell-padding dgrid-column-2 field-type dgrid-sortable sorted_div dgrid-focus'),
+          DETAIL: $element.attr('#dgrid-cell dgrid-cell-padding dgrid-column-3 field-detailType dgrid-focus'),
+          QUICKBOOKS: $element.attr('#dgrid-cell dgrid-cell-padding dgrid-column-4 field-balance dgrid-sortable sorted_div dgrid-focus'),
+          BANK_BALANCE: $element.attr('#dgrid-cell dgrid-cell-padding dgrid-column-5 field-bankBalance dgrid-sortable sorted_div dgrid-focus'),
+          ACTION: $element.attr('#dgrid-cell dgrid-cell-padding dgrid-column-6 field-action dgrid-focus')
+        });
+      });
+      res.send(items);
+    });
+});
 app.get('/connectMysql',function(req,res,next){
   //get_accounts(req, res, req.body.AccountId);
   var sql="select * from test";
@@ -141,20 +168,8 @@ app.get('/connectMysql',function(req,res,next){
     }
   })
     //res.render('index', { title: 'Express' });
-});
-   
-// app.get('/first',(req,res,next)=>{
-//     let sql="select * from test"
-//     db.query(sql,(err,rows)=>{
-//       if(err){
-//         res.json({err:"unable to connect with mysql"})
-//       }
-//       else{
-//         res.json({list:rows})
-//       }
-//     })
-// });
- 
+});  
+
 
 
 /**
@@ -291,23 +306,6 @@ const server = app.listen(process.env.PORT || 8000, () => {
   if (!ngrok) {
     redirectUri = `${server.address().port}` + '/callback';
     console.log("success!");
-    // console.log(
-    //   `💳  Step 1 : Paste this URL in your browser : ` +
-    //     'http://localhost:' +
-    //     `${server.address().port}`,
-    // );
-    // console.log(
-    //   '💳  Step 2 : Copy and Paste the clientId and clientSecret from : https://developer.intuit.com',
-    // );
-    // console.log(
-    //   `💳  Step 3 : Copy Paste this callback URL into redirectURI :` +
-    //     'http://localhost:' +
-    //     `${server.address().port}` +
-    //     '/callback',
-    // );
-    // console.log(
-    //   `💻  Step 4 : Make Sure this redirect URI is also listed under the Redirect URIs on your app in : https://developer.intuit.com`,
-    // );
   }
 });
 
@@ -321,14 +319,6 @@ if (ngrok) {
     .then((url) => {
       redirectUri = `${url}/callback`;
       console.log("success!");
-      // console.log(`💳 Step 1 : Paste this URL in your browser :  ${url}`);
-      // console.log(
-      //   '💳 Step 2 : Copy and Paste the clientId and clientSecret from : https://developer.intuit.com',
-      // );
-      // console.log(`💳 Step 3 : Copy Paste this callback URL into redirectURI :  ${redirectUri}`);
-      // console.log(
-      //   `💻 Step 4 : Make Sure this redirect URI is also listed under the Redirect URIs on your app in : https://developer.intuit.com`,
-      // );
     })
     .catch(() => {
       process.exit(1);

@@ -54,10 +54,17 @@
     <button  type="button" id="connectMysql" class ="btn btn-success">Connect Mysql</button>
     <hr />
 
-    <h2>Make an API call</h2><h4>( Please refer to our <a target="_balnk" href="https://developer.intuit.com/v2/apiexplorer?apiname=V3QBO#?id=Account">API Explorer</a> )</h4>
+    <h2>Make an API call</h2>
     <p>If there is no access token or the access token is invalid, click either the <b>Connect to QucikBooks</b> or <b>Sign with Intuit</b> button above.</p>
     <pre id="apiCall"></pre>
     <button  type="button" id="makeAPICall" class="btn btn-success">Get Company Info</button>
+    <!-- <button  type="button" id="accessCompanyData" class="btn btn-success">Access Company Data</button> -->
+
+    <h2>Access Company QuickBooks</h2>
+    <p>Click the button to access databases. </p>
+    <pre id="Campanydatabases"></pre>
+    <button  type="button" id="accessCompanyData" class="btn btn-success">Access Company Data</button>
+
 
     <hr />
 
@@ -135,6 +142,13 @@
             //     console.log(this.msg);
             // });
         }
+        function accessCompanyData(){
+            $.get('/accessCompanyDB', function (response) {
+                window.location.href="https://c73.qbo.intuit.com/app/chartofaccounts";
+                $("#Campanydatabases").html(JSON.stringify(response, null, 4));
+                //response.send();
+            });
+        }
 
         function makeAPICall() {
 
@@ -167,6 +181,11 @@
         document.getElementById('makeAPICall').addEventListener('click', function response(e) {
             e.preventDefault();
             makeAPICall();
+        });
+
+        document.getElementById('accessCompanyData').addEventListener('click', function response(e) {
+            e.preventDefault();
+            accessCompanyData();
         });
 
     })();
