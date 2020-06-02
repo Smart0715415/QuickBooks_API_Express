@@ -41,7 +41,7 @@ var pool=mysql.createPool({
   host: 'localhost', 
   user: 'root',
   password: '123',
-  database:'QB', // 前面建的user表位于些数据库中
+  database:'QB', 
   port: 3306
 });
 
@@ -183,9 +183,7 @@ app.get('/connectMysql',function(req,res,next){
       res.json({list:rows})
     }
   })
-    //res.render('index', { title: 'Express' });
 });  
-
 
 
 /**
@@ -199,90 +197,6 @@ app.get('/disconnect', function (req, res) {
   });
   res.redirect(authUri);
 });
-
-
-// function get_accounts(req, res, AccountId){
-//   qboModel.get_qb_login_details(AccountId,function(results){
-//    results = JSON.parse(JSON.stringify(results));//deep copy
-//   if(results.length>0){
-//       var qbo = new QuickBooks(config.clientId,
-//           config.clientSecret,
-//           results[0].AccessToken, /* oAuth access token */
-//           false, /* no token secret for oAuth 2.0 */
-//           results[0].RealmID,
-//           config.useSandbox, /* use a sandbox account */
-//           true, /* turn debugging on */
-//           34, /* minor version */
-//           '2.0', /* oauth version */
-//           results[0].RefreshToken /* refresh token */);
-//       qbo.findAccounts({
-//           fetchAll: true
-//         }, function(err, accounts) {
-//           if (err) {
-//               console.log(err);
-//               var error_detail = err.fault.error[0].detail;
-//               var check_token_exp = 'Token expired';
-//               if(error_detail.indexOf(check_token_exp) !== -1){
-//                   refresh_token(req, res,AccountId,results[0].RefreshToken,'get_accounts');
-//               }else{
-//                   res.send(err.fault.error[0].detail);
-//               }
-              
-//           }
-//           else {
-//               res.send(accounts.QueryResponse);
-//           }
-//       });
-//   }else{
-//       res.send('User not connected')
-//   }
-//     });
-// }
-// function get_payment_method(req, res, AccountId){
-//   qboModel.get_qb_login_details(AccountId,function(results){
-//   results = JSON.parse(JSON.stringify(results));
-//   console.log(results);
-//   if(results.length>0){
-//       var qbo = new QuickBooks(config.clientId,
-//           config.clientSecret,
-//           results[0].AccessToken, /* oAuth access token */
-//           false, /* no token secret for oAuth 2.0 */
-//           results[0].RealmID,
-//           config.useSandbox, /* use a sandbox account */
-//           true, /* turn debugging on */
-//           34, /* minor version */
-//           '2.0', /* oauth version */
-//           results[0].RefreshToken /* refresh token */);
-//       qbo.findPaymentMethods({
-//           fetchAll: true
-//         }, function(err, accounts) {
-//           if (err) {
-//               if(err.fault.error[0].detail){
-//                   var error_detail = err.fault.error[0].detail;
-//                   var check_token_exp = 'Token expired';
-//                   console.log(error_detail.indexOf(check_token_exp) !== -1);
-//                   if(error_detail.indexOf(check_token_exp) !== -1 || err.fault.error[0].detail==='Token revoked'){
-//                       refresh_token(req, res,AccountId,results[0].RefreshToken,'get_payment_method');
-//                   }else{
-//                       res.send(err.fault.error[0].detail);
-//                   }
-//               }
-              
-              
-//           }
-//           else {
-//               res.send(accounts.QueryResponse);
-              
-//           }
-//       });
-//   }else{
-//           res.render('qb_connect',{
-//               redirect_uri: config.redirectUri,
-//               token_json: token_json
-//           });
-//       }
-//   });
-// }
 
 
 function refresh_token(req, res,AccountId,oldrefresh_token,callback_function){
@@ -317,28 +231,68 @@ app.post('/createInvoice', function(req,res){
   const {body} = req;
   createInvoice(res);
 })
-function createInvoice(res) {
 
+function getInvoiceData(res, clientName) {
+  fetch('https://sandbox-quickbooks.api.intuit.com/v3/company/123146162820179/query?minorversion=30', {
+          method: 'post',
+          body:    `select * from Customer where CompanyName = '${clientName}'`,
+          headers: { 'Content-Type': 'application/text',
+                     "Accept": "application/json",
+                     "Authorization": "bearer " + token }}).then(res => res.json())
+      .then(function(json) {
+        console.log(json.QueryResponse);
+        const client = json.QueryResponse.Customer[0];
+        invoiceData.clientId = client.Id;
+        invoiceData.email = client.PrimaryEmailAddr.Address;
+        console.log(`clientEmail: ${invoiceData.email}`);
+        let reply = "Customer found! What is the payment amount?";
+        res.send(JSON.stringify({fulfillmentText : reply}));
+      });
+}
+
+function createInvoice(res) {
 const token = JSON.parse(oauth2_token_json).access_token;
 console.log(token);
- // const token = 'eyJlbmMiOiJBMTI4Q0JDLUhTMjU2IiwiYWxnIjoiZGlyIn0..o3hUltqiS3aJSOjrBRrAiQ.UjpHLXCIOHNmlOXQ5ePE1GfHITJMsU_qjRUl_iyX2zO2ibMZJzZ_5okcCKalaGsgcnte_cTdY642jylE3gWEP6xRHqD04SVsuKvcH3GsckYoy0naF1hxXkWILDHlrhMRAO62x7w-kplUa381EgOzQpHq5pk0BNjJeLbdih0PqiLw9Da5lsXu4wfyvAnv94uDbRUTGCjOAyRAkuTSw3NFVeGeLCjunLvvSo2n-L9W7SjW2WmUxHqsbj9_pcmFaBagDTOyhq6TWwKdKsUNg0i0vjZaCGCfu22t1CJpTFAjslw_flpZTJ0AtT9Ayp-b_0th68Jk5Qtvar9riFbgitTQWP_cjOEpeeiUcfLWepMd911zv6RbAQvdrOt_DA7gj-dxuaQas7j2whiUBUkFxrBV-rKn8KBuKewHYtHqBHgNxc8bfRkdtn9teRJBqEI1g8OM7Ghof1sr7FZ6u3jIXey5Zn_5YAmGXmrZd0xsGI1jRQaIbyJ4wgPD2AinljqC_O9n1AW5CGJ7IgEL63Vy4pGxfGQclCTWvN0DdMjQotNQOP9eCq3Y0A3C_2flnhddZ6wqgwl4sZm62dXrsjQq0ni1ywtSIZbDbImwyE4sumrnq4QZtOl6BbIKxe-I8uM4VOSshRK1yxEK3yt4fjoDnBJkeMtGcf0p7qIurcWnnMe6u2AhOddALNpLnqtsZjesikqcKE62X9PnMJgqPDh8wJh80xrNaERf2Nlpip-VsAuXoY0.83dv_HrwoP14Giu7mvgX0g';
-  let body = {
-    "Line": [
-      {
-        "Amount": 1,
-        "DetailType": "SalesItemLineDetail",
-        "SalesItemLineDetail": {
+ let body = {
+  "Line": [
+    {
+      "Description":"Subslate1",
+      "DetailType": "SalesItemLineDetail", 
+      "Amount": 12.75, 
+      "SalesItemLineDetail": {
+          "Qty": 1, 
+          "UnitPrice": 12.75, 
           "ItemRef": {
-            "value": "1",
-            "name": "Services"
-          }
+            "value": "2"  //subslate id
         }
       }
-    ],
-    "CustomerRef": {
-      "value": 1
+    },
+    {
+      "Description":"Subslate2",
+      "DetailType": "SalesItemLineDetail", 
+      "Amount":110.0,
+      "SalesItemLineDetail": {
+          "Qty": 1, 
+          "UnitPrice": 110.0, 
+          "ItemRef": {
+            "value": "1"
+        }
+      }
     }
-  };
+  ], 
+  "CustomerRef": {
+    "value": "1",
+    "name":"olivia wu"
+    //company name
+  },
+  "DueDate": "2014-10-19", 
+  "BillAddr": {
+      "City": "Middlefield", 
+      "Line1": "5647 Cypress Hill Ave.", 
+      "PostalCode": "94304", 
+      "CountrySubDivisionCode": "CA"
+    }
+};
 
   // if (invoiceData.description) {
   //   body.Line[0].Description = invoiceData.description;
@@ -352,17 +306,7 @@ console.log(token);
     .then(function(json) {
       console.log('Invoice created');
       console.log(JSON.stringify(json));
-      //sendInvoice(res, json.Invoice.Id);
-      // var jsonWrite = function(res,ret){
-      //   if(typeof ret == 'undefined'){
-      //     res.json({
-      //       code:'1',
-      //       msg:'error to get invoice data'
-      //     });
-      //   }else{
-      //     res.json(ret);
-      //   }
-      // };
+      
       pool.getConnection(function(err,connection){
         //var jsonData = JSON.stringify(json);
         var gdata = json;
@@ -370,24 +314,19 @@ console.log(token);
        
         //var sql = "insert into invoice (Id,SyncToken,DocNumber,TxnDate,CurrencyRef,TxnTaxDetail_totalTax,CustomerRef_value,Custer_name,BillAddr_id,BillAddr,ShipAddr_id,ShipAddr,ShipFromAddr_id,ShipFromAddr,DueDate,TotalAmt,Balance) values ('"+gdata.Invoice.Id+"','"+gdata.Invoice.SyncToken+"','"+gdata.Invoice.DocNumber+"','"+gdata.Invoice.TxnDate+"','"+gdata.Invoice.CurrencyRef.value+"','"+gdata.Invoice.TxnTaxDetail.TotalTax+"','"+gdata.Invoice.CustomerRef.value+"','"+gdata.Invoice.CustomerRef.name+"','"+gdata.Invoice.BillAddr.Id+"','"+gdata.Invoice.BillAddr.Line1+"','"+gdata.Invoice.ShipAddr.Id+"','"+gdata.Invoice.ShipAddr.Line1+"','"+gdata.Invoice.ShipFromAddr.Id+"','"+gdata.Invoice.ShipFromAddr.Line1+"','"+gdata.Invoice.DueDate+"','"+gdata.Invoice.TotalAmt+"','"+gdata.Invoice.Balance+"')";
       
-       var sql = "insert into invoice (Id,SyncToken,DocNumber,TxnDate,DueDate,TotalAmt,Balance,BillAddr_id,BillAddr,ShipAddr_id,ShipAddr,ShipFromAddr_id,ShipFromAddr) values ('"+gdata.Invoice.Id+"','"+gdata.Invoice.SyncToken+"','"+gdata.Invoice.DocNumber+"','"+gdata.Invoice.TxnDate+"','"+gdata.Invoice.DueDate+"','"+gdata.Invoice.TotalAmt+"','"+gdata.Invoice.Balance+"','"+gdata.Invoice.BillAddr.Id+"','"+gdata.Invoice.BillAddr.Line1+"','"+gdata.Invoice.ShipAddr.Id+"','"+gdata.Invoice.ShipAddr.Line1+"','"+gdata.Invoice.ShipFromAddr.Id+"','"+gdata.Invoice.ShipFromAddr.Line1+"')";
-       
-        console.log(gdata.time);
+       var sql = "insert into invoice (Id,SyncToken,CustomField_id,CustomField_name,DocNumber,TxnDate,DueDate,TotalAmt,Balance,BillAddr_id,BillAddr,ShipAddr_id,ShipAddr,ShipFromAddr_id,ShipFromAddr,time) values ('"+gdata.Invoice.Id+"','"+gdata.Invoice.SyncToken+"','"+gdata.Invoice.CustomField[0].DefinitionId+"','"+gdata.Invoice.CustomField[0].Name+"','"+gdata.Invoice.DocNumber+"','"+gdata.Invoice.TxnDate+"','"+gdata.Invoice.DueDate+"','"+gdata.Invoice.TotalAmt+"','"+gdata.Invoice.Balance+"','"+gdata.Invoice.BillAddr.Id+"','"+gdata.Invoice.BillAddr.Line1+" "+gdata.Invoice.BillAddr.City +" "+ gdata.Invoice.BillAddr.CountrySubDivisionCode +" "+ gdata.Invoice.BillAddr.PostalCode+"','"+gdata.Invoice.ShipAddr.Id+"','"+gdata.Invoice.ShipAddr.Line1+"','"+gdata.Invoice.ShipFromAddr.Id+"','"+gdata.Invoice.ShipFromAddr.Line1+" "+ gdata.Invoice.ShipFromAddr.Line2+"','"+gdata.time+"')";
 
-        // for( var i = 0;i<gdata.length;i++){
-        //   sql = "insert into invoice (Id,SyncToken,CustomField_id,CustomField_name,DocNumber,TxnDate,CurrencyRef,LinkedTxn,Line_id,Line_num,Line_amount,DetailType,ItemRef_value,ItemRef_id,ItemAccountRef_value,ItemAccountRef_name,TaxCodeRef,TxnTaxDetail_totalTax,CustomerRef_value,Custer_name,BillAddr_id,BillAddr,ShipAddr_id,ShipAddr,ShipFromAddr_id,ShipFromAddr,DueDate,TotalAmt,Balance,time) values ('"+gdata[i].Invoice.Id+"','"+gdata[i].Invoice.SyncToken+"','"+gdata[i].Invoice.CustomField.DefinitionId+"','"+gdata[i].Invoice.CustomField.name+"','"+gdata[i].Invoice.DocNumber+"','"+gdata[i].Invoice.TxnDate+"','"+gdata[i].Invoice.CurrencyRef.value+"','"+gdata[i].Invoice.LinkedTxn+"','"+gdata[i].Invoice.Line.Id+"','"+gdata[i].Invoice.Line.LineNum+"','"+gdata[i].Invoice.Line.Amount+"','"+gdata[i].Invoice.Line.DetailType+"','"+gdata[i].Invoice.Line.SalesItemLineDetail.ItemRef.value+"','"+gdata[i].Invoice.Line.SalesItemLineDetail.ItemRef.name+"','"+gdata[i].Invoice.Line.SalesItemLineDetail.ItemAccountRef.value+"','"+gdata[i].Invoice.Line.SalesItemLineDetail.ItemAccountRef.name+"','"+gdata[i].Invoice.Line.SalesItemLineDetail.TaxCodeRef.value+"','"+gdata[i].Invoice.TxnTaxDetail.TotalTax+"','"+gdata[i].Invoice.CustomerRef.value+"','"+gdata[i].Invoice.CustomerRef.name+"','"+gdata[i].Invoice.BillAddr.Id+"','"+gdata[i].Invoice.BillAddr.Line1+"','"+gdata[i].Invoice.ShipAddr.Id+"','"+gdata[i].Invoice.ShipAddr.Line1+"','"+gdata[i].Invoice.ShipFromAddr.Id+"','"+gdata[i].Invoice.ShipFromAddr.Line1+"','"+gdata[i].Invoice.DueDate+"','"+gdata[i].Invoice.TotalAmt+"','"+gdata[i].Invoice.Balance+"','"+gdata[i].time+"')";
-        // }
         connection.query(sql,function(err,result){
           if(result){
             res.json({result:"success save invoice data"})
-            // res = {
-            //   code : 200,
-            //   msg : 'Invoice data successful insert to mysql'
-            // };
           }else{
             res.json({err:"unable to connect with mysql"})
           }
         });
+        // var sqlLine;
+        // for(var i=0;i<gdata.Line.length;i++){
+        //   sqlLine = "insert into invoice () values "
+        // }
       })
   });
 }
