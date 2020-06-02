@@ -7,7 +7,7 @@ const connection = mysql.createConnection({
   database : 'QB'
 });
 connection.connect((err) => {
-  if (err) { console.log("error!") }
+  if (err) { console.log("database error!") }
   //else { console.log("success") }
 })
 
@@ -17,6 +17,9 @@ function querySQL (sql, callback)
       callback(err, rows);
   });
 
+}
+function saveDB(){
+  
 }
 
 module.exports={querySQL:querySQL}

@@ -64,7 +64,9 @@
     <p>Click the button to access databases. </p>
     <pre id="Campanydatabases"></pre>
     <button  type="button" id="accessCompanyData" class="btn btn-success">Access Company Data</button>
-
+    <!-- <pre id="Campanydatabases"></pre> -->
+    <button  type="button" id="fetchInvoice" class="btn btn-success">Get Company Invoice</button>
+   
 
     <hr />
 
@@ -80,6 +82,7 @@
     </p>
 
 </div>
+
 
 <script type="text/javascript">
     (function() {
@@ -124,23 +127,21 @@
             });
         }
 
+        function fetchInvoice() {
+            window.location.href="http://localhost:3300/createInvoice";
+        }
+
         function refreshToken() {
 
-            // Generate the authUri
             $.get('/refreshAccessToken', function (token) {
                 var token = (token!=null) ? token : 'Please Authorize Using Connect to Quickbooks first !';
                 $("#accessToken").html(token);
             });
         }
-
+       
         function connnectMysql(){
             //get connection with mysql
-            window.location.href="http://localhost:8000/connectMysql";
-
-            // $.get("/connnectMysql",function(response) {
-            //     this.msg = response.data.list;
-            //     console.log(this.msg);
-            // });
+            window.location.href="http://localhost:3300/connectMysql";
         }
         function accessCompanyData(){
             $.get('/accessCompanyDB', function (response) {
@@ -156,6 +157,11 @@
             $.get('/getCompanyInfo', function (response) {
                 $("#apiCall").html(JSON.stringify(response, null, 4));
             });
+        }
+        function createInvoice(){
+            $.get('/createInvoice',function(response){
+                $("#Campanydatabases").html(JSON.stringify(response,null,4));
+            })
         }
 
         document.getElementById('authorizeUri').addEventListener('click', function response(e) {
@@ -182,10 +188,22 @@
             e.preventDefault();
             makeAPICall();
         });
+        document.getElementById('createInvoice').addEventListener('click', function response(e) {
+            e.preventDefault();
+            createInvoice();
+        });
 
         document.getElementById('accessCompanyData').addEventListener('click', function response(e) {
             e.preventDefault();
             accessCompanyData();
+        });
+        document.getElementById('fetchInvoice').addEventListener('click', function response(e) {
+            e.preventDefault();
+            fetchInvoice();
+        });
+        document.getElementById('fetchInvoice').addEventListener('click', function response(e) {
+            e.preventDefault();
+            fetchInvoice();
         });
 
     })();
