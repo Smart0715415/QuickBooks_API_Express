@@ -39,9 +39,9 @@ app.use(bodyParser.json());
 const urlencodedParser = bodyParser.urlencoded({ extended: false });
 var pool=mysql.createPool({
   host: 'localhost', 
-  user: 'root',
+  user: 'olivia',
   password: '123',
-  database:'QB', 
+  database:'qb', 
   port: 3306
 });
 
@@ -124,6 +124,74 @@ app.get('/callback', function (req, res) {
 // 		};
 // 	});
 // });
+
+app.get('/candidates', function (request, response) {
+	let sql="select cand_id,first_name,last_name,address1,address2,city,state,zip,email,phone from cand";
+	let mydata = [];
+	db.querySQL(sql,(err,rows)=>{
+		if(err){
+			response.json({err:"error"})
+		}
+		else{
+			for(let em of rows)
+			{
+				//console.log(em);
+				let record = [em['cand_id'], em['first_name'], em['last_name'], em['address1'], em['address2'],em['city'],em['state'],em['zip'],em['email'],em['phone']];
+				mydata.push(record);
+			}
+			console.log(mydata);
+			response.writeHead(200, {
+				"Content-Type": "application/json"
+			});
+			response.write(JSON.stringify(mydata));
+      response.end();
+      //response.sendfile('./public/invoice.html')
+		};
+	});
+});
+
+app.get('/getAllInvoices', function (request, response) {
+	let sql="select Id,Custer_name,Balance,time,DueDate,TotalAmt,DetailType from invoice";
+	let mydata = [];
+	db.querySQL(sql,(err,rows)=>{
+		if(err){
+			response.json({err:"error"})
+		}
+		else{
+			for(let em of rows)
+			{
+				//console.log(em);
+				let record = [em['Id'], em['Custer_name'], em['Balance'], em['time'], em['DueDate'],em['TotalAmt'],em['DetailType']];
+				mydata.push(record);
+			}
+			console.log(mydata);
+			response.writeHead(200, {
+				"Content-Type": "application/json"
+			});
+			response.write(JSON.stringify(mydata));
+      response.end();
+      //response.sendfile('./public/invoice.html')
+		};
+	});
+});
+app.post('/updateCandidate',function(req,res){
+  var cand_id = req.body.cand_id;
+  var first_name  = req.body.first_name ;
+  var last_name  = req.body.last_name ;
+  var address1 = req.body.address;
+  var city = req.body.city;
+  var state = req.body.state;
+  var zip = req.body.zip;
+  var BillTo = req.body.BillTo;
+  var BillAddr = req.body.BillAddr;
+  db.querySQL("update cand set first_name='" + first_name + "',last_name ='" + last_name  + "',address1 ='" + address1  + "',city ='" + city + "',state ='" + state  + "',zip ='" + zip  + "' where cand_id=" + cand_id, function (err, rows) {
+      if (err) {
+            res.end('Update error：' + err);
+        } else {
+          res.json('Update success');
+        }
+    });
+});
 
 
 
@@ -252,7 +320,7 @@ function getInvoiceData(res, clientName) {
 
 function createInvoice(res) {
 const token = JSON.parse(oauth2_token_json).access_token;
-console.log(token);
+
  let body = {
   "Line": [
     {
@@ -314,7 +382,9 @@ console.log(token);
        
         //var sql = "insert into invoice (Id,SyncToken,DocNumber,TxnDate,CurrencyRef,TxnTaxDetail_totalTax,CustomerRef_value,Custer_name,BillAddr_id,BillAddr,ShipAddr_id,ShipAddr,ShipFromAddr_id,ShipFromAddr,DueDate,TotalAmt,Balance) values ('"+gdata.Invoice.Id+"','"+gdata.Invoice.SyncToken+"','"+gdata.Invoice.DocNumber+"','"+gdata.Invoice.TxnDate+"','"+gdata.Invoice.CurrencyRef.value+"','"+gdata.Invoice.TxnTaxDetail.TotalTax+"','"+gdata.Invoice.CustomerRef.value+"','"+gdata.Invoice.CustomerRef.name+"','"+gdata.Invoice.BillAddr.Id+"','"+gdata.Invoice.BillAddr.Line1+"','"+gdata.Invoice.ShipAddr.Id+"','"+gdata.Invoice.ShipAddr.Line1+"','"+gdata.Invoice.ShipFromAddr.Id+"','"+gdata.Invoice.ShipFromAddr.Line1+"','"+gdata.Invoice.DueDate+"','"+gdata.Invoice.TotalAmt+"','"+gdata.Invoice.Balance+"')";
       
-       var sql = "insert into invoice (Id,SyncToken,CustomField_id,CustomField_name,DocNumber,TxnDate,DueDate,TotalAmt,Balance,BillAddr_id,BillAddr,ShipAddr_id,ShipAddr,ShipFromAddr_id,ShipFromAddr,time) values ('"+gdata.Invoice.Id+"','"+gdata.Invoice.SyncToken+"','"+gdata.Invoice.CustomField[0].DefinitionId+"','"+gdata.Invoice.CustomField[0].Name+"','"+gdata.Invoice.DocNumber+"','"+gdata.Invoice.TxnDate+"','"+gdata.Invoice.DueDate+"','"+gdata.Invoice.TotalAmt+"','"+gdata.Invoice.Balance+"','"+gdata.Invoice.BillAddr.Id+"','"+gdata.Invoice.BillAddr.Line1+" "+gdata.Invoice.BillAddr.City +" "+ gdata.Invoice.BillAddr.CountrySubDivisionCode +" "+ gdata.Invoice.BillAddr.PostalCode+"','"+gdata.Invoice.ShipAddr.Id+"','"+gdata.Invoice.ShipAddr.Line1+"','"+gdata.Invoice.ShipFromAddr.Id+"','"+gdata.Invoice.ShipFromAddr.Line1+" "+ gdata.Invoice.ShipFromAddr.Line2+"','"+gdata.time+"')";
+ //      var sql = "insert into invoice (Id,SyncToken,CustomField_id,CustomField_name,DocNumber,TxnDate,DueDate,TotalAmt,Balance,BillAddr_id,BillAddr,ShipAddr_id,ShipAddr,ShipFromAddr_id,ShipFromAddr,time) values ('"+gdata.Invoice.Id+"','"+gdata.Invoice.SyncToken+"','"+gdata.Invoice.CustomField[0].DefinitionId+"','"+gdata.Invoice.CustomField[0].Name+"','"+gdata.Invoice.DocNumber+"','"+gdata.Invoice.TxnDate+"','"+gdata.Invoice.DueDate+"','"+gdata.Invoice.TotalAmt+"','"+gdata.Invoice.Balance+"','"+gdata.Invoice.BillAddr.Id+"','"+gdata.Invoice.BillAddr.Line1+" "+gdata.Invoice.BillAddr.City +" "+ gdata.Invoice.BillAddr.CountrySubDivisionCode +" "+ gdata.Invoice.BillAddr.PostalCode+"','"+
+
+      var sql = "insert into invoice (Id,SyncToken,CustomField_id,CustomField_name,DocNumber,TxnDate,DueDate,TotalAmt,Balance,BillAddr_id,BillAddr,ShipAddr_id,ShipAddr,ShipFromAddr_id,ShipFromAddr,time,Line_id,Line_num,Line_amount,DetailType) values ('"+gdata.Invoice.Id+"','"+gdata.Invoice.SyncToken+"','"+gdata.Invoice.CustomField[0].DefinitionId+"','"+gdata.Invoice.CustomField[0].Name+"','"+gdata.Invoice.DocNumber+"','"+gdata.Invoice.TxnDate+"','"+gdata.Invoice.DueDate+"','"+gdata.Invoice.TotalAmt+"','"+gdata.Invoice.Balance+"','"+gdata.Invoice.BillAddr.Id+"','"+gdata.Invoice.BillAddr.Line1+" "+gdata.Invoice.BillAddr.City +" "+ gdata.Invoice.BillAddr.CountrySubDivisionCode +" "+ gdata.Invoice.BillAddr.PostalCode+"','"+gdata.Invoice.ShipAddr.Id+"','"+gdata.Invoice.ShipAddr.Line1+"','"+gdata.Invoice.ShipFromAddr.Id+"','"+gdata.Invoice.ShipFromAddr.Line1+" "+ gdata.Invoice.ShipFromAddr.Line2+"','"+gdata.time+"','"+gdata.Invoice.Line[0].Id+"','"+gdata.Invoice.Line[0].LineNum+"','"+gdata.Invoice.Line[0].Amount+"','"+gdata.Invoice.Line[0].DetailType+"')";
 
         connection.query(sql,function(err,result){
           if(result){
@@ -330,7 +400,30 @@ console.log(token);
       })
   });
 }
-
+app.get('/candidates/:cand_id',function(req,res){
+ // var  cand_id = req.query.cand_id;
+  var json  = req.params; 
+  var cand_id = json["cand_id"];   
+if(cand_id){ 
+ db.querySQL("select cand_id,first_name,last_name,address1,address2,city,state,zip,email,phone from cand where cand_id=" + cand_id, function (err, rows) {
+    if (err) {
+          res.end('Search candidate  error：' + err);
+      } else {
+	res.json({list:rows});
+        //res.json('Update success');
+      }
+  });
+}else{
+	db.querySQL("select cand_id,first_name,last_name,address1,address2,city,state,zip,email,phone from cand" , function (err,rows){
+	if (err) {
+          res.end('Search candidate  error：' + err);
+      } else {
+        res.json({list:rows});
+        //res.json('Update success');
+      }
+})
+}
+})
 
 /**
  * Start server on HTTP (will use ngrok for HTTPS forwarding)
